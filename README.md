@@ -4,7 +4,7 @@ During the COVID-19 pandemic, Twitter became a key platform for people to expres
 Using a labeled dataset from Kaggle, we will first perform exploratory data analysis (EDA) 🔍 to understand the data's characteristics. Then, we will build and evaluate different models to accurately classify tweet sentiments. This analysis will help us better understand public reactions and contribute to the study of communication during global crises.
 
 # Background
-concerns, and experiences. Twitter, with its vast reach and real-time updates, became a key source for gauging public sentiment during the crisis.
+The COVID-19 pandemic, which began in early 2020, dramatically impacted daily life worldwide. During this time, people flocked to social media platforms like Twitter to express their thoughts, concerns, and experiences. Twitter, with its vast reach and real-time updates, became a key source for gauging public sentiment during the crisis.
 
 Sentiment analysis, a key area of Natural Language Processing (NLP) 🧠, helps identify the emotional tone of text. In this project, we aim to build a machine learning model 🤖 to classify the sentiment of COVID-19-related tweets as positive, negative, or neutral. Using a labeled dataset from Kaggle 📊, we seek to understand public perception during the pandemic's critical early stages, providing insights into social reactions and emotional responses to global events.
 
