@@ -95,52 +95,275 @@ cv = KFold(n_splits=3, shuffle=True, random_state=42)
 _Python code of model selection and tuning_
 
 # Model Training
-All models were trained using the GridSearchCV library, which evaluates them based on their accuracy scores. The best-performing model was XGBoost, achieving an accuracy score of 80.65%%.
+All models were trained using the GridSearchCV library, which evaluates them based on their roc-auc scores. The best-performing model was XGBoost, achieving an roc-auc score of 0.9239.
 ```Python
 grids = {}
 for model_name, model in models.items():
     print(f'Training and tuning {model_name}...')
-    grids[model_name] = GridSearchCV(estimator=model, param_grid=param_grids[model_name], cv=cv,scoring='accuracy', n_jobs=-1, verbose=1)
+    grids[model_name] = GridSearchCV(estimator=model, param_grid=param_grids[model_name], cv=cv,scoring='roc_auc_ovr_weighted', n_jobs=-1, verbose=1)
     grids[model_name].fit(X_train_sm, y_train_sm)
+    
+    y_train_pred = grids[model_name].predict(X_train_sm)
+    
     best_params = grids[model_name].best_params_
     best_score = grids[model_name].best_score_
+
+    acc = accuracy_score(y_train_sm, y_train_pred)
+    f1 = f1_score(y_train_sm, y_train_pred, average='micro')
     
-    print(f'Best parameters for {model_name}: {best_params}')
-    print(f'Best accuracy for {model_name}: {best_score}\n')
+    print(f'Best Parameters for {model_name}: {best_params}')
+    print(f'Best ROC AUC Score: {best_score}')
+    print(f'Accuracy Score: {acc}')
+    print(f'F1 Score: {f1}\n')
 ```
 _Python code of model training_
+
+```
+Training and tuning LogisticRegression...
+Fitting 3 folds for each of 1 candidates, totalling 3 fits
+Best Parameters for LogisticRegression: {}
+Best ROC AUC Score: 0.9192238814033881
+Accuracy Score: 0.8496909078280197
+F1 Score: 0.8496909078280197
+
+Training and tuning MultinomialNB...
+Fitting 3 folds for each of 5 candidates, totalling 15 fits
+Best Parameters for MultinomialNB: {'alpha': 2.0}
+Best ROC AUC Score: 0.8699482684875846
+Accuracy Score: 0.7573568567525641
+F1 Score: 0.7573568567525641
+
+Training and tuning RandomForest...
+Fitting 3 folds for each of 27 candidates, totalling 81 fits
+Best Parameters for RandomForest: {'max_depth': None, 'min_samples_split': 2, 'n_estimators': 500}
+Best ROC AUC Score: 0.920062490245169
+Accuracy Score: 0.9991433400476951
+F1 Score: 0.9991433400476951
+
+Training and tuning XGBoost...
+Fitting 3 folds for each of 27 candidates, totalling 81 fits
+Best Parameters for XGBoost: {'learning_rate': 0.3, 'max_depth': 10, 'n_estimators': 500}
+Best ROC AUC Score: 0.9239232776626974
+Accuracy Score: 0.9606167951656596
+F1 Score: 0.9606167951656596
+```
+_model training result_
 # Model Evaluation
-All models were assessed to identify the best performer on the validation and test data. Once again, the XGBoost model emerged as the top performer, achieving the highest scores in accuracy, precision, recall, and F1.
+All models were assessed to identify the best performer on both the validation and test datasets. It was observed that the accuracy and F1-score of all models significantly decreased, which can be attributed to class imbalance in the validation and test datasets. Notably, logistic regression achieved the highest ROC-AUC score of 0.8959 and was the least impacted by overfitting. As a result, logistic regression was chosen as the top-performing model.
 
 ```python
 for i in grids.keys():
+    y_pred_proba = grids[i].predict_proba(X_valid_tfidf)
     y_pred = grids[i].predict(X_valid_tfidf)
+    roc_auc = roc_auc_score(y_valid, y_pred_proba, average='weighted', multi_class='ovr')
+    acc = accuracy_score(y_valid, y_pred)
+    f1 = f1_score(y_valid, y_pred, average='micro')
     print (i)
+    print(f'\nROC AUC Score: {roc_auc}')
+    print(f'Accuracy Score: {acc}')
+    print(f'F1 Score: {f1}\n')
     print(classification_report(y_valid, y_pred, target_names=['Negative', 'Neutral', 'Positive']))
     print(confusion_matrix(y_valid, y_pred))
     print("==========================================================")
     print()
 ```
 _Python code of model evaluation on validation data_
+```
+LogisticRegression
+
+ROC AUC Score: 0.8958800842121446
+Accuracy Score: 0.7583099963472544
+F1 Score: 0.7583099963472544
+
+              precision    recall  f1-score   support
+
+    Negative       0.79      0.74      0.76      3030
+     Neutral       0.59      0.75      0.66      1543
+    Positive       0.83      0.78      0.81      3640
+
+    accuracy                           0.76      8213
+   macro avg       0.74      0.76      0.74      8213
+weighted avg       0.77      0.76      0.76      8213
+
+[[2229  401  400]
+ [ 214 1154  175]
+ [ 389  406 2845]]
+==========================================================
+
+MultinomialNB
+
+ROC AUC Score: 0.8499817603354125
+Accuracy Score: 0.6979179349811275
+F1 Score: 0.6979179349811275
+
+              precision    recall  f1-score   support
+
+    Negative       0.71      0.72      0.71      3030
+     Neutral       0.57      0.53      0.55      1543
+    Positive       0.74      0.75      0.75      3640
+
+    accuracy                           0.70      8213
+   macro avg       0.67      0.67      0.67      8213
+weighted avg       0.70      0.70      0.70      8213
+
+[[2167  281  582]
+ [ 332  817  394]
+ [ 560  332 2748]]
+==========================================================
+
+RandomForest
+
+ROC AUC Score: 0.8695668632468097
+Accuracy Score: 0.7248264945817606
+F1 Score: 0.7248264945817606
+
+              precision    recall  f1-score   support
+
+    Negative       0.76      0.68      0.72      3030
+     Neutral       0.57      0.71      0.64      1543
+    Positive       0.78      0.77      0.77      3640
+
+    accuracy                           0.72      8213
+   macro avg       0.70      0.72      0.71      8213
+weighted avg       0.73      0.72      0.73      8213
+
+[[2056  408  566]
+ [ 224 1099  220]
+ [ 433  409 2798]]
+==========================================================
+
+XGBoost
+
+ROC AUC Score: 0.8949896878830289
+Accuracy Score: 0.7689029587239742
+F1 Score: 0.7689029587239742
+
+              precision    recall  f1-score   support
+
+    Negative       0.79      0.74      0.76      3030
+     Neutral       0.64      0.77      0.70      1543
+    Positive       0.82      0.80      0.81      3640
+
+    accuracy                           0.77      8213
+   macro avg       0.75      0.77      0.76      8213
+weighted avg       0.78      0.77      0.77      8213
+
+[[2232  342  456]
+ [ 196 1185  162]
+ [ 410  332 2898]]
+==========================================================
+```
+_Model evaluation on validation data result_
 
 ```python
 for i in grids.keys():
+    y_pred_proba = grids[i].predict_proba(X_test_tfidf)
     y_pred = grids[i].predict(X_test_tfidf)
+    roc_auc = roc_auc_score(y_test, y_pred_proba, average='weighted', multi_class='ovr')
+    acc = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='micro')
     print (i)
+    print(f'\nROC AUC Score: {roc_auc}')
+    print(f'Accuracy Score: {acc}')
+    print(f'F1 Score: {f1}\n')
     print(classification_report(y_test, y_pred, target_names=['Negative', 'Neutral', 'Positive']))
     print(confusion_matrix(y_test, y_pred))
     print("==========================================================")
     print()
 ```
 _Python code of model evaluation on test data_
+```
+LogisticRegression
+
+ROC AUC Score: 0.887667228116487
+Accuracy Score: 0.7482867685819715
+F1 Score: 0.7482867685819715
+
+              precision    recall  f1-score   support
+
+    Negative       0.80      0.74      0.77      1633
+     Neutral       0.55      0.72      0.62       615
+    Positive       0.81      0.77      0.79      1546
+
+    accuracy                           0.75      3794
+   macro avg       0.72      0.74      0.73      3794
+weighted avg       0.76      0.75      0.75      3794
+
+[[1205  209  219]
+ [ 108  440   67]
+ [ 195  157 1194]]
+==========================================================
+
+MultinomialNB
+
+ROC AUC Score: 0.842374974790024
+Accuracy Score: 0.6987348444913021
+F1 Score: 0.6987348444913021
+
+              precision    recall  f1-score   support
+
+    Negative       0.74      0.73      0.74      1633
+     Neutral       0.52      0.49      0.51       615
+    Positive       0.72      0.75      0.73      1546
+
+    accuracy                           0.70      3794
+   macro avg       0.66      0.66      0.66      3794
+weighted avg       0.70      0.70      0.70      3794
+
+[[1186  149  298]
+ [ 155  303  157]
+ [ 252  132 1162]]
+==========================================================
+
+RandomForest
+
+ROC AUC Score: 0.8424630189080808
+Accuracy Score: 0.6945176594623089
+F1 Score: 0.6945176594623089
+
+              precision    recall  f1-score   support
+
+    Negative       0.75      0.67      0.71      1633
+     Neutral       0.51      0.68      0.58       615
+    Positive       0.74      0.73      0.73      1546
+
+    accuracy                           0.69      3794
+   macro avg       0.67      0.69      0.67      3794
+weighted avg       0.71      0.69      0.70      3794
+
+[[1096  234  303]
+ [ 111  417   87]
+ [ 255  169 1122]]
+==========================================================
+
+XGBoost
+
+ROC AUC Score: 0.8817409470989199
+Accuracy Score: 0.7509225092250923
+F1 Score: 0.7509225092250923
+
+              precision    recall  f1-score   support
+
+    Negative       0.79      0.74      0.76      1633
+     Neutral       0.59      0.71      0.65       615
+    Positive       0.79      0.78      0.78      1546
+
+    accuracy                           0.75      3794
+   macro avg       0.72      0.74      0.73      3794
+weighted avg       0.76      0.75      0.75      3794
+
+[[1204  184  245]
+ [ 100  439   76]
+ [ 221  119 1206]]
+==========================================================
+```
+_Model evaluation on test data result_
 
 ![alt text](asset/confusion_matrix.png)
-_Confusion Matrix of XGBoost model_
+_Confusion Matrix of Logistic Regression model_
 
 ![alt text](asset/classification_report.png)
-_Classification Report of XGBoost model_
+_Classification Report of Logistic Regression model_
 
 # Conclusion
-This project successfully developed a machine learning model to predict the sentiment of COVID-19-related tweets. After preprocessing the data with TF-IDF and addressing class imbalance using SMOTE, we evaluated several models. XGBoost proved to be the most effective, achieving an accuracy of 80.65% and outperforming the other models in all metrics.
-
-Overall, this analysis offers valuable insights into public sentiment during the pandemic and demonstrates the utility of machine learning for sentiment classification.
+During the COVID-19 pandemic, sentiment analysis of tweets revealed crucial insights into public reactions and emotional responses. Using machine learning techniques, this project successfully classified tweet sentiments as positive, neutral, or negative. Exploratory Data Analysis (EDA) revealed trends such as a surge in tweets during key events like California’s stay-at-home order and the predominance of positive sentiments. Logistic Regression emerged as the most effective model, achieving a high ROC-AUC score of 0.8959 on the validation set. This study underscores the power of NLP in understanding communication during global crises, paving the way for further research in analyzing real-time societal responses.
